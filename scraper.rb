@@ -160,6 +160,13 @@ def add_courses(url, counter, parsed_page)
     contact = "no contact number available"
   end
 
+  delivery = ""
+  if parsed_page.css('p').text.eql? "lectures"
+    delivery = parsed_page.css('p').text.strip
+  else
+    delivery = "No delivery information available"
+  end
+
   # course object with all of the scraped info
   course = {
     title: parsed_page.css('h1.search-result__result-provider').children[0].text.strip,
