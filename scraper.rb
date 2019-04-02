@@ -128,6 +128,13 @@ def add_courses(url, counter, parsed_page)
     provide_url = "No url available"
   end
 
+  department = ""
+  if !parsed_page.css('span').css('[id="contact_Title"]')[0].nil?
+    department = parsed_page.css('span').css('[id="contact_Title"]')[0].text
+  else
+    department = "No department available"
+  end
+
   email = ""
   if !parsed_page.at_css('.contact-email').nil?
     email = parsed_page.at_css('.contact-email').attributes["href"].value
@@ -144,12 +151,6 @@ def add_courses(url, counter, parsed_page)
   else
     requirements = "No requirements on the page"
   end
-
-  # if !parsed_page.css('tr').css("td[class='column-width--50pc']").nil?
-  #   requirements = parsed_page.css('tr').css("td[class='column-width--50pc']")[0].text
-  # # else
-  # #   requirements = parsed_page.css('tr').css("td[class='column-width--50pc']").text
-  # end
 
   # if a contact exists then
   contact = ""
@@ -171,15 +172,16 @@ def add_courses(url, counter, parsed_page)
     location: all_paragraphs[paragraph_number+5].text,
     start_date: all_paragraphs[paragraph_number+7].text,
     duration: all_paragraphs[paragraph_number+9].text,
-    # site: parsed_page.css('td.column-width--70pc').children[2].text
+    department: department,
     requirements: requirements,
     institution: parsed_page.css('td[id="institution-code"]').text,
     course_code: parsed_page.css('td[id="application-code"]').text,
     contact_number: contact,
-    email: email
+    email: email,
+    delivery: delivery
   }
 
-  puts "Course #{counter}: #{course[:title]} #{course[:provider]}, email: #{course[:email]}"
+  puts "Course #{counter}: #{course[:title]} #{course[:provider]}, delivery: #{course[:delivery]}"
   @all_courses << course
 end
 
@@ -198,11 +200,12 @@ def write_courses
       file.write("Location: " + course[:location] + "\n")
       file.write("Start Date: " + course[:start_date] + "\n")
       file.write("Duration " + course[:duration] + "\n")
+      file.write("Department: " + course[:department] + "\n")
+      file.write("Requirements: " + course[:requirements] + "\n")
       file.write("Institution Code " + course[:institution] + "\n")
       file.write("Course Code: " + course[:course_code] + "\n")
       file.write("Contact number: " + course[:contact_number] + "\n")
       file.write("Email address: " + course[:email])
-      # file.write("Site: " + course[:site] + "\n")
       file.write("\n")
     end
   ensure
