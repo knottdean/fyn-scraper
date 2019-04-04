@@ -14,13 +14,17 @@ HTTParty::Basement.default_options.update(verify: false)
 # IDs are used in second scraping url
 def scrape_ids
 
-  total_providers = 114
-  providers_per_page = 15.0
+  page_url = "https://digital.ucas.com/search/results?SearchText=foundation+year&SubjectText=&SubjectText=&ProviderText=&ProviderText=&AutoSuggestType=&SearchType=&SortOrder=ProviderAtoZ&PreviouslyAppliedFilters=SH_3_UCAS+Conservatoires__QM_2_Bachelor+degrees+(with+or+without+Honours)__QM_1_Masters+degrees__&AcademicYearId=2019&ClearingOptOut=False&vacancy-rb=rba&filters=Destination_Undergraduate&filters=QualificationMapped_Bachelor+degrees+(with+or+without+Honours)&filters=QualificationMapped_Masters+degrees&DistanceFromPostcode=1mi&RegionDistancePostcode=&CurrentView=Provider&__RequestVerificationToken=mfmFi3xLLswWlC7EMDoZrwxo5DWYxKarqcKC6Xr1gDYo6PzGVdl8SvMXQ9zVWEQfqqD5bSnZHrPLKuglkceJqhpvSVMXE_SZb4Ofwkhpjf41"
+  unparsed_page = HTTParty.get(page_url)
+  parsed_page = Nokogiri::HTML(unparsed_page)
+
+  total_providers = parsed_page.css('[class="search-results__count hide-element--to-medium"]').text.split[-2].to_i
+  providers_per_page = parsed_page.css('[class="accordion__label"]').count.to_f
   page = 1
   last_page = (total_providers/providers_per_page).ceil
 
   while page <= last_page
-    page_url = "https://digital.ucas.com/search/results?SearchText=foundation+year&SubjectText=&SubjectText=&ProviderText=&ProviderText=&AutoSuggestType=&SearchType=&SortOrder=ProviderAtoZ&AcademicYearId=2019&ClearingOptOut=False&vacancy-rb=rba&filters=Destination_Undergraduate&DistanceFromPostcode=1mi&RegionDistancePostcode=&CurrentView=Provider&__RequestVerificationToken=1nBYW2kVKMrig8UqCs2jmIF1AA8-dYYrxhOdLraSg0nrtH1TKj5oNyPMBkD1rm3GuKfvN_wcuzkwjRoUqxtF6Vi7R-71MXshO_5IRVPAeis1&pageNumber=#{page}"
+    page_url = "https://digital.ucas.com/search/results?SearchText=foundation+year&SubjectText=&ProviderText=&AutoSuggestType=&SearchType=&SortOrder=ProviderAtoZ&PreviouslyAppliedFilters=QM_0_Masters+degrees__&AcademicYearId=2019&ClearingOptOut=False&vacancy-rb=rba&filters=Destination_Undergraduate&UcasTariffPointsMin=0&UcasTariffPointsMax=144%2B&ProviderText=&SubjectText=&filters=QualificationMapped_Bachelor+degrees+%28with+or+without+Honours%29&filters=QualificationMapped_Masters+degrees&DistanceFromPostcode=1mi&RegionDistancePostcode=&CurrentView=Provider&__RequestVerificationToken=Q1dB0fS_QUi_VlSFqALLL5TDQy385UPk0J4oHL_8aCTalPfN1sctXoCPMROstOf2EbHQJlbkJHfiLisqEF1qnaMsEFMf3EdFoUPKtqWx-Nc1&pageNumber=#{page}"
     unparsed_page = HTTParty.get(page_url)
     parsed_page = Nokogiri::HTML(unparsed_page)
     page_providers = parsed_page.css('h3.accordion__label')
@@ -53,7 +57,7 @@ end
 def scrape_course_ucas_urls
   @all_providers.each do |provider|
     id = provider[:id]
-    page_url = "https://digital.ucas.com/search/results?SearchText=foundation+year&SubjectText=&ProviderText=&AutoSuggestType=&SearchType=&SortOrder=ProviderAtoZ&AcademicYearId=2019&ClearingOptOut=False&vacancy-rb=rba&filters=Destination_Undergraduate&ProviderText=&SubjectText=&DistanceFromPostcode=1mi&RegionDistancePostcode=&CurrentView=Provider&__RequestVerificationToken=1nBYW2kVKMrig8UqCs2jmIF1AA8-dYYrxhOdLraSg0nrtH1TKj5oNyPMBkD1rm3GuKfvN_wcuzkwjRoUqxtF6Vi7R-71MXshO_5IRVPAeis1&GroupByProviderId=#{id}&GroupByDestination=Undergraduate&GroupByFrom=0&GroupBySize=5000"
+    page_url = "https://digital.ucas.com/search/results?SearchText=foundation+year&SubjectText=&SubjectText=&ProviderText=&ProviderText=&AutoSuggestType=&SearchType=&SortOrder=ProviderAtoZ&PreviouslyAppliedFilters=QM_0_Bachelor+degrees+(with+or+without+Honours)__&AcademicYearId=2019&ClearingOptOut=False&vacancy-rb=rba&filters=Destination_Undergraduate&filters=QualificationMapped_Bachelor+degrees+(with+or+without+Honours)&filters=QualificationMapped_Masters+degrees&UcasTariffPointsMin=0&UcasTariffPointsMax=144%2b&DistanceFromPostcode=1mi&RegionDistancePostcode=&CurrentView=Provider&__RequestVerificationToken=I4o0CAJi6qu_cPwc_8yGJYYEB1xPNnzrUoNUP14zJG-pDp-DXp9nZbEb4DJxWqCkT6XyZhsyCaovoLeFlQX24enN3zaLRVkgfvT87YXQsOY1&pageNumber=3&GroupByProviderId=#{id}&GroupByDestination=Undergraduate&GroupByFrom=0&GroupBySize=5000"
     unparsed_page = HTTParty.get(page_url)
     parsed_page = Nokogiri::HTML(unparsed_page)
     tables = parsed_page.css('table.open')
@@ -115,7 +119,8 @@ def add_courses(url, counter, parsed_page)
   # some pages are set up differently
   if course_description.empty?
     course_description = all_paragraphs[7].text
-  else
+  end
+  if course_description.empty?
     course_description = "No course description"
   end
   course_description = course_description.strip
